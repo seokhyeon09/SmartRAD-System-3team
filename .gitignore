@@ -141,3 +141,26 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# ===== Docker / 민감 정보 =====
+# 실제 비밀번호가 담긴 .env는 절대 커밋 금지 (.env.example만 커밋 허용)
+.env
+.env.*
+!.env.example
+
+# docker-compose 로컬 오버라이드 (개인 환경별 설정, 시크릿 포함 가능)
+docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose.*.local.yml
+
+# 시크릿/키 파일
+secrets/
+*.pem
+*.key
+*.crt
+*.p12
+
+# MySQL 로컬 덤프/백업 파일
+*.sql.gz
+*.dump
+mysql-data/
