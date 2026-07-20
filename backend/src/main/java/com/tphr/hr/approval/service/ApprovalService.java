@@ -78,7 +78,7 @@ public class ApprovalService {
                             .document(savedDocument)
                             .fileName(fileName)
                             .filePath("/mock-storage/" + fileName) // Mock 경로
-                            .fileSizeKb(1024L) // 임의 사이즈
+                            .fileSizeKb(1024) // 임의 사이즈
                             .build())
                     .collect(Collectors.toList());
             approvalAttachmentRepository.saveAll(attachments);
@@ -186,7 +186,7 @@ public class ApprovalService {
                 .id(doc.getId())
                 .docNumber(doc.getDocNumber())
                 .title(doc.getTitle())
-                .docTypeName(doc.getDocType().getCodeName())
+                .docTypeName(doc.getDocType().getName())
                 .draftedByName(doc.getDraftedBy().getName())
                 .status(doc.getStatus())
                 .createdAt(doc.getCreatedAt())

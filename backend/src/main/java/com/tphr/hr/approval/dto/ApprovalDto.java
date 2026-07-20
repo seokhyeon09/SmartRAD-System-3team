@@ -48,7 +48,7 @@ public class ApprovalDto {
         private Long id;
         private String fileName;
         private String filePath;
-        private Long fileSizeKb;
+        private Integer fileSizeKb;
     }
 
     @Getter
