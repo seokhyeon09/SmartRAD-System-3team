@@ -190,6 +190,9 @@ public class ApprovalService {
         if ("COMPLETED".equals(document.getStatus())) {
             throw new IllegalStateException("이미 최종 승인 완료된 문서는 삭제할 수 없습니다.");
         }
+        if ("REJECTED".equals(document.getStatus())) {
+            throw new IllegalStateException("반려된 문서는 삭제할 수 없습니다. (데이터 보존)");
+        }
 
         approvalLineRepository.deleteByDocumentId(documentId);
         approvalAttachmentRepository.deleteByDocumentId(documentId);
