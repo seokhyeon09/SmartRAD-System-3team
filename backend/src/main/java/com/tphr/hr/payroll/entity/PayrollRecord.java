@@ -47,4 +47,19 @@ public class PayrollRecord extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
     private String status = "PENDING"; // 대기, 완료 등
+
+    public void confirm() {
+        this.status = "CONFIRMED";
+    }
+
+    public void markAsManual() {
+        this.status = "MANUAL";
+    }
+
+    public void updateCalculation(BigDecimal baseSalary, BigDecimal totalAllowance, BigDecimal totalDeduction, BigDecimal netPay) {
+        this.baseSalary = baseSalary;
+        this.totalAllowance = totalAllowance;
+        this.totalDeduction = totalDeduction;
+        this.netPay = netPay;
+    }
 }

@@ -36,6 +36,20 @@ public class ApprovalLine extends BaseEntity {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
-    @Column(name = "reject_reason", length = 255)
+    @Column(name = "reject_reason", length = 500)
     private String rejectReason;
+
+    public void approve() {
+        this.status = "APPROVED";
+        this.approvedAt = java.time.LocalDateTime.now();
+    }
+
+    public void reject(String reason) {
+        this.status = "REJECTED";
+        this.rejectReason = reason;
+    }
+
+    public void markAsWaiting() {
+        this.status = "WAITING";
+    }
 }

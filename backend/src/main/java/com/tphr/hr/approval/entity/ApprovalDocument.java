@@ -38,4 +38,13 @@ public class ApprovalDocument extends BaseEntity {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private String status = "DRAFT"; // DRAFT, IN_PROGRESS, COMPLETED, REJECTED
+
+    public void updateStatus(String newStatus) {
+        this.status = newStatus;
+    }
+
+    public void updateDocument(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
 }
