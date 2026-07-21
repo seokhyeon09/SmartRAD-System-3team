@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -41,13 +42,18 @@ public class PayrollService {
         List<PayrollRecord> calculatedRecords = new ArrayList<>();
 
         for (Employee employee : activeEmployees) {
-            // 이미 계산된 급여가 있다면 삭제 후 재계산
-            payrollRecordRepository.findByEmployeeIdAndPayrollYearAndPayrollMonth(employee.getId(), year, month)
-                    .ifPresent(existingRecord -> {
-                        payrollDetailRepository.deleteByPayrollRecordId(existingRecord.getId());
-                        payrollRecordRepository.delete(existingRecord);
-                        payrollRecordRepository.flush(); // 즉시 반영
-                    });
+            Optional<PayrollRecord> optionalRecord = payrollRecordRepository.findByEmployeeIdAndPayrollYearAndPayrollMonth(employee.getId(), year, month);
+            if (optionalRecord.isPresent()) {
+                PayrollRecord existingRecord = optionalRecord.get();
+                if ("CONFIRMED".equals(existingRecord.getStatus())) {
+                    log.info("Employee {} payroll for {}/{} is already CONFIRMED. Skipping recalculation.", employee.getId(), year, month);
+                    calculatedRecords.add(existingRecord);
+                    continue;
+                }
+                payrollDetailRepository.deleteByPayrollRecordId(existingRecord.getId());
+                payrollRecordRepository.delete(existingRecord);
+                payrollRecordRepository.flush();
+            }
 
             // 1. 기본급 (실무에서는 직급/호봉 테이블 연동)
             BigDecimal baseSalary = new BigDecimal("3000000"); // 임의의 기본급 300만원
