@@ -72,7 +72,7 @@ SELECT rg.id, m.id, TRUE, FALSE, FALSE, FALSE, NOW(), NOW()
 FROM role_group rg
 CROSS JOIN menu m
 WHERE rg.name = '일반직원'
-  AND m.menu_code IN ('EMP_MASTER', 'ATTENDANCE', 'LICENSE_EDU_HEALTH', 'PAYROLL', 'NOTICE');
+  AND m.menu_code IN ('EMP_MASTER', 'ATTENDANCE', 'LICENSE_EDU_HEALTH', 'PAYROLL', 'NOTICE', 'DUTY_SCHEDULE');
 
 INSERT INTO role_permission (role_group_id, menu_id, can_read, can_write, can_delete, can_approve, created_at, updated_at)
 SELECT rg.id, m.id, TRUE, TRUE, FALSE, FALSE, NOW(), NOW()

@@ -1,0 +1,48 @@
+package com.tphr.hr.attendance.controller;
+
+import com.tphr.hr.attendance.dto.DutyScheduleCreateRequest;
+import com.tphr.hr.attendance.dto.DutyScheduleEntryRequest;
+import com.tphr.hr.attendance.dto.DutyScheduleResponse;
+import com.tphr.hr.attendance.service.DutyScheduleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/duty-schedules")
+@RequiredArgsConstructor
+public class DutyScheduleController {
+
+    private final DutyScheduleService dutyScheduleService;
+
+    @PostMapping
+    public ResponseEntity<DutyScheduleResponse> createDutySchedule(@RequestBody DutyScheduleCreateRequest request) {
+        return ResponseEntity.ok(dutyScheduleService.createDutySchedule(request));
+    }
+
+    @PostMapping("/{scheduleId}/entries")
+    public ResponseEntity<DutyScheduleResponse> assignEntries(
+            @PathVariable Long scheduleId,
+            @RequestBody List<DutyScheduleEntryRequest> requests,
+            @RequestParam Long requesterId) {
+        return ResponseEntity.ok(dutyScheduleService.assignEntries(scheduleId, requests, requesterId));
+    }
+
+    @PatchMapping("/{scheduleId}/confirm")
+    public ResponseEntity<DutyScheduleResponse> confirmDutySchedule(
+            @PathVariable Long scheduleId,
+            @RequestParam Long requesterId) {
+        return ResponseEntity.ok(dutyScheduleService.confirmDutySchedule(scheduleId, requesterId));
+    }
+
+    @GetMapping("/department/{deptId}")
+    public ResponseEntity<DutyScheduleResponse> getDutySchedule(
+            @PathVariable Long deptId,
+            @RequestParam Integer year,
+            @RequestParam Integer month) {
+        // 읽기 권한은 interceptor 또는 frontend 레벨에서 필터링된다고 가정하여 파라미터에서 제외
+        return ResponseEntity.ok(dutyScheduleService.getDutySchedule(deptId, year, month));
+    }
+}
