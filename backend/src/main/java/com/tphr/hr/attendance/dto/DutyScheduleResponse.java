@@ -14,4 +14,5 @@ public class DutyScheduleResponse {
     private Integer scheduleMonth;
     private String status; // DRAFT, CONFIRMED
     private List<DutyScheduleEntryResponse> entries;
+    private List<String> warnings; // 자동 생성 시 인원 미달 등 경고 메시지
 }
