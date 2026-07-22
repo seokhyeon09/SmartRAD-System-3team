@@ -5,14 +5,15 @@ const nextConfig: NextConfig = {
   // reactStrictMode: true,
   // devIndicators: false,
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:8080";
     return [
       {
         source: "/api/:path*",
-        destination: "http://127.0.0.1:8080/api/:path*", // 백엔드 포트에 맞게 수정
+        destination: `${backendUrl}/api/:path*`, 
       },
       {
         source: "/api-system/:path*",
-        destination: "http://127.0.0.1:8080/:path*", 
+        destination: `${backendUrl}/:path*`, 
       },
     ];
   },
