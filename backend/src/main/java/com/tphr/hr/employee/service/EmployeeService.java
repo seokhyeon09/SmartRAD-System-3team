@@ -150,6 +150,11 @@ public class EmployeeService {
         return new AccountIssueResponse(employee.getId(), employee.getEmpNo(), rawPassword);
     }
 
+    @Transactional
+    public void deleteEmployees(java.util.List<Long> ids) {
+        employeeRepository.deleteAllByIdInBatch(ids);
+    }
+
     Employee getEmployeeEntity(Long id) {
         return employeeRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("직원을 찾을 수 없습니다. id=" + id));
