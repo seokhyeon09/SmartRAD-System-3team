@@ -1,199 +1,54 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import DashboardSidebar from "@/component/dashboard/DashboardSidebar/DashboardSidebar";
+
+import type {
+  ApprovalComment,
+  ApprovalDocument,
+  ApprovalInboxData,
+  ApprovalPriority,
+  AvatarTone,
+} from "@/types/approval";
 
 import styles from "./ApprovalInboxPage.module.scss";
 
-type Priority = "urgent" | "normal";
-type FilterType = "all" | "urgent" | "normal";
-type AvatarTone = "blue" | "green" | "purple" | "yellow" | "red";
+type FilterType = "all" | ApprovalPriority;
+
 type SummaryTone = "blue" | "red" | "orange" | "green";
 
-interface ApprovalDocument {
-  id: string;
-  priority: Priority;
-  priorityLabel: string;
-  title: string;
-  attachment: string;
-  drafter: string;
-  drafterInitial: string;
-  drafterDepartment: string;
-  drafterRole: string;
-  requestedAt: string;
-  dDay: string;
-  avatarTone: AvatarTone;
-  description: string;
-  fileName: string;
-  fileMeta: string;
+type SummaryIconType = "inbox" | "flash" | "clock" | "check";
+
+interface ApprovalInboxPageProps {
+  initialData: ApprovalInboxData;
 }
 
-interface CommentItem {
-  id: number;
-  initial: string;
-  name: string;
-  tag?: string;
-  time: string;
-  content: string;
-  tone: AvatarTone;
-}
-
-const summaryCards: {
+interface SummaryCard {
   label: string;
   value: string;
   description: string;
   tone: SummaryTone;
-  icon: "inbox" | "flash" | "clock" | "check";
-}[] = [
-  {
-    label: "전체 대기",
-    value: "32건",
-    description: "처리 필요",
-    tone: "blue",
-    icon: "inbox",
-  },
-  {
-    label: "긴급 결재",
-    value: "6건",
-    description: "즉시 처리 요망",
-    tone: "red",
-    icon: "flash",
-  },
-  {
-    label: "오늘 만료",
-    value: "3건",
-    description: "금일 마감",
-    tone: "orange",
-    icon: "clock",
-  },
-  {
-    label: "이번달 처리",
-    value: "198건",
-    description: "승인율 80.2%",
-    tone: "green",
-    icon: "check",
-  },
-];
+  icon: SummaryIconType;
+}
 
-const approvalDocuments: ApprovalDocument[] = [
-  {
-    id: "DOC-2026-0142",
-    priority: "urgent",
-    priorityLabel: "긴급",
-    title: "연차 휴가 신청 (정은지 · 응급의학과)",
-    attachment: "첨부 1개",
-    drafter: "정은지",
-    drafterInitial: "정",
-    drafterDepartment: "응급의학과",
-    drafterRole: "사원",
-    requestedAt: "2026.07.09",
-    dDay: "D-0",
-    avatarTone: "blue",
-    description:
-      "2026년 7월 10일부터 7월 14일까지 연차 5일을 사용하고자 합니다. 개인 사유로 인한 신청이며, 업무 인수인계는 동료 이수현 사원에게 완료하였습니다.",
-    fileName: "연차신청서_정은지.pdf",
-    fileMeta: "PDF · 0.3 MB",
-  },
-  {
-    id: "DOC-2026-0141",
-    priority: "normal",
-    priorityLabel: "일반",
-    title: "인사발령 품의서 (간호본부 · 박서현)",
-    attachment: "첨부 2개",
-    drafter: "박서현",
-    drafterInitial: "박",
-    drafterDepartment: "간호본부",
-    drafterRole: "대리",
-    requestedAt: "2026.07.08",
-    dDay: "D-2",
-    avatarTone: "green",
-    description:
-      "간호본부 인력 운영 계획에 따라 병동 간 인사이동 승인을 요청합니다. 신규 배치와 교대 편성 내용을 함께 검토 부탁드립니다.",
-    fileName: "인사발령_박서현.pdf",
-    fileMeta: "PDF · 0.5 MB",
-  },
-  {
-    id: "DOC-2026-0140",
-    priority: "normal",
-    priorityLabel: "일반",
-    title: "교육비 지원 신청 (영상의학과 · 오지훈)",
-    attachment: "첨부 없음",
-    drafter: "오지훈",
-    drafterInitial: "오",
-    drafterDepartment: "영상의학과",
-    drafterRole: "주임",
-    requestedAt: "2026.07.07",
-    dDay: "D-5",
-    avatarTone: "purple",
-    description:
-      "직무 역량 강화를 위한 외부 전문교육 수강비 지원을 신청합니다.",
-    fileName: "교육비지원_오지훈.pdf",
-    fileMeta: "PDF · 0.2 MB",
-  },
-  {
-    id: "DOC-2026-0139",
-    priority: "urgent",
-    priorityLabel: "긴급",
-    title: "재직증명서 발급 요청 (원무팀 · 강민서)",
-    attachment: "첨부 1개",
-    drafter: "강민서",
-    drafterInitial: "강",
-    drafterDepartment: "원무팀",
-    drafterRole: "사원",
-    requestedAt: "2026.07.06",
-    dDay: "D-0",
-    avatarTone: "yellow",
-    description: "금융기관 제출을 위한 재직증명서 긴급 발급을 요청합니다.",
-    fileName: "재직증명서_강민서.pdf",
-    fileMeta: "PDF · 0.2 MB",
-  },
-  {
-    id: "DOC-2026-0138",
-    priority: "normal",
-    priorityLabel: "일반",
-    title: "하계휴가 집중사용 신청서 (총무팀 · 최준혁)",
-    attachment: "첨부 없음",
-    drafter: "최준혁",
-    drafterInitial: "최",
-    drafterDepartment: "총무팀",
-    drafterRole: "주임",
-    requestedAt: "2026.07.05",
-    dDay: "D-7",
-    avatarTone: "red",
-    description: "하계휴가 집중 사용 기간에 맞춰 휴가 승인을 요청합니다.",
-    fileName: "하계휴가신청_최준혁.pdf",
-    fileMeta: "PDF · 0.2 MB",
-  },
-];
+function getAvatarClass(tone: AvatarTone) {
+  const avatarClasses: Record<AvatarTone, string> = {
+    blue: styles.avatarBlue,
+    green: styles.avatarGreen,
+    purple: styles.avatarPurple,
+    yellow: styles.avatarYellow,
+    red: styles.avatarRed,
+  };
 
-const comments: CommentItem[] = [
-  {
-    id: 1,
-    initial: "김",
-    name: "김관리",
-    tag: "결재자",
-    time: "2025.06.25 10:30",
-    content:
-      "첨부 서류를 확인했습니다. 업무 인수인계 완료 여부를 이수현 사원에게도 확인 부탁드립니다.",
-    tone: "blue",
-  },
-  {
-    id: 2,
-    initial: "이",
-    name: "이수현",
-    tag: "참조",
-    time: "2025.06.25 11:15",
-    content:
-      "인수인계 완료되었습니다. 7월 9일 오전 중으로 업무 정리 문서 공유하겠습니다.",
-    tone: "purple",
-  },
-];
+  return avatarClasses[tone];
+}
 
 function SearchIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <circle cx="11" cy="11" r="6.5" />
-      <path d="M16 16l4 4" />
+      <path d="m16 16 4 4" />
     </svg>
   );
 }
@@ -221,8 +76,8 @@ function BellIcon() {
 function DetailArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7 12h8" />
-      <path d="m12 7 5 5-5 5" />
+      <path d="M7 12h10" />
+      <path d="m13 7 5 5-5 5" />
     </svg>
   );
 }
@@ -239,10 +94,9 @@ function MailIcon() {
 function UserPlusIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="10" cy="9" r="3" />
-      <path d="M4.5 18c.5-3.3 2.2-5 5.5-5s5 1.7 5.5 5" />
-      <path d="M18 8v6" />
-      <path d="M15 11h6" />
+      <circle cx="9" cy="9" r="3" />
+      <path d="M3.5 19c.5-3.8 2.3-5.8 5.5-5.8s5 2 5.5 5.8" />
+      <path d="M18 8v6M15 11h6" />
     </svg>
   );
 }
@@ -264,11 +118,7 @@ function ChatIcon() {
   );
 }
 
-function SummaryIcon({
-  type,
-}: {
-  type: "inbox" | "flash" | "clock" | "check";
-}) {
+function SummaryIcon({ type }: { type: SummaryIconType }) {
   if (type === "inbox") {
     return (
       <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -297,23 +147,74 @@ function SummaryIcon({
 
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="m7.5 12 3 3 6-7" />
       <circle cx="12" cy="12" r="8" />
+      <path d="m8.5 12 2.4 2.4 4.8-5" />
     </svg>
   );
 }
 
-export default function ApprovalInboxPage() {
+export default function ApprovalInboxPage({
+  initialData,
+}: ApprovalInboxPageProps) {
   const [filter, setFilter] = useState<FilterType>("all");
-  const [keyword, setKeyword] = useState("");
-  const [selectedId, setSelectedId] = useState(approvalDocuments[0].id);
 
-  const [isDetailOpen, setIsDetailOpen] = useState(true);
+  const [keyword, setKeyword] = useState("");
+
+  const [documents, setDocuments] = useState<ApprovalDocument[]>(
+    initialData.documents,
+  );
+
+  const [comments, setComments] = useState<ApprovalComment[]>(
+    initialData.comments,
+  );
+
+  const [selectedId, setSelectedId] = useState(
+    initialData.documents[0]?.id ?? "",
+  );
+
+  const [isDetailOpen, setIsDetailOpen] = useState(
+    initialData.documents.length > 0,
+  );
+
+  const [commentText, setCommentText] = useState("");
+
+  const summary = initialData.summary;
+
+  const summaryCards: SummaryCard[] = [
+    {
+      label: "전체 대기",
+      value: `${summary.totalPending}건`,
+      description: "처리 필요",
+      tone: "blue",
+      icon: "inbox",
+    },
+    {
+      label: "긴급 결재",
+      value: `${summary.urgentPending}건`,
+      description: "즉시 처리 요망",
+      tone: "red",
+      icon: "flash",
+    },
+    {
+      label: "오늘 만료",
+      value: `${summary.dueToday}건`,
+      description: "금일 마감",
+      tone: "orange",
+      icon: "clock",
+    },
+    {
+      label: "이번달 처리",
+      value: `${summary.processedThisMonth}건`,
+      description: `승인율 ${summary.approvalRate}%`,
+      tone: "green",
+      icon: "check",
+    },
+  ];
 
   const filteredDocuments = useMemo(() => {
     const normalizedKeyword = keyword.trim().toLowerCase();
 
-    return approvalDocuments.filter((document) => {
+    return documents.filter((document) => {
       const matchesFilter = filter === "all" || document.priority === filter;
 
       const matchesKeyword =
@@ -324,11 +225,51 @@ export default function ApprovalInboxPage() {
 
       return matchesFilter && matchesKeyword;
     });
-  }, [filter, keyword]);
+  }, [documents, filter, keyword]);
 
   const selectedDocument =
-    approvalDocuments.find((document) => document.id === selectedId) ??
-    approvalDocuments[0];
+    documents.find((document) => document.id === selectedId) ?? documents[0];
+
+  const selectedComments = comments.filter(
+    (comment) => comment.documentId === selectedId,
+  );
+
+  const openDetailPanel = (documentId: string) => {
+    setSelectedId(documentId);
+    setIsDetailOpen(true);
+  };
+
+  const handleAddComment = () => {
+    const trimmedComment = commentText.trim();
+
+    if (!trimmedComment || !selectedDocument) {
+      return;
+    }
+
+    const newComment: ApprovalComment = {
+      id: Date.now(),
+      documentId: selectedDocument.id,
+
+      initial: "김",
+      name: "김관리",
+      tag: "결재자",
+
+      time: new Date().toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+
+      content: trimmedComment,
+      avatarTone: "blue",
+    };
+
+    setComments((currentComments) => [...currentComments, newComment]);
+
+    setCommentText("");
+  };
 
   return (
     <div className={styles.dashboard}>
@@ -338,6 +279,7 @@ export default function ApprovalInboxPage() {
         <header className={styles.topHeader}>
           <label className={styles.globalSearch}>
             <SearchIcon />
+
             <input type="search" placeholder="직원, 부서, 문서를 검색하세요" />
           </label>
 
@@ -385,6 +327,7 @@ export default function ApprovalInboxPage() {
                   <div className={styles.summaryBody}>
                     <p>{card.label}</p>
                     <h2>{card.value}</h2>
+
                     <span className={styles[`${card.tone}Text`]}>
                       {card.description}
                     </span>
@@ -431,6 +374,7 @@ export default function ApprovalInboxPage() {
 
                 <label className={styles.tableSearch}>
                   <SearchIcon />
+
                   <input
                     type="search"
                     value={keyword}
@@ -456,13 +400,14 @@ export default function ApprovalInboxPage() {
 
                   <tbody>
                     {filteredDocuments.map((document) => {
-                      const isSelected = selectedId === document.id;
+                      const isSelected =
+                        selectedId === document.id && isDetailOpen;
 
                       return (
                         <tr
                           key={document.id}
                           className={isSelected ? styles.selectedRow : ""}
-                          onClick={() => setSelectedId(document.id)}
+                          onClick={() => openDetailPanel(document.id)}
                         >
                           <td>
                             <span
@@ -480,22 +425,16 @@ export default function ApprovalInboxPage() {
 
                           <td className={styles.documentTitle}>
                             <strong>{document.title}</strong>
+
                             <small>{document.attachment}</small>
                           </td>
 
                           <td>
                             <div className={styles.drafter}>
                               <span
-                                className={`${styles.avatar} ${
-                                  styles[
-                                    `avatar${
-                                      document.avatarTone
-                                        .charAt(0)
-                                        .toUpperCase() +
-                                      document.avatarTone.slice(1)
-                                    }`
-                                  ]
-                                }`}
+                                className={`${styles.avatar} ${getAvatarClass(
+                                  document.avatarTone,
+                                )}`}
                               >
                                 {document.drafterInitial}
                               </span>
@@ -525,6 +464,11 @@ export default function ApprovalInboxPage() {
                                 isSelected ? styles.detailButtonActive : ""
                               }`}
                               aria-label={`${document.title} 상세보기`}
+                              onClick={(event) => {
+                                event.stopPropagation();
+
+                                openDetailPanel(document.id);
+                              }}
                             >
                               <DetailArrowIcon />
                             </button>
@@ -536,7 +480,7 @@ export default function ApprovalInboxPage() {
                     {filteredDocuments.length === 0 && (
                       <tr>
                         <td colSpan={7} className={styles.emptyState}>
-                          검색 결과가 없습니다.
+                          조회된 결재 문서가 없습니다.
                         </td>
                       </tr>
                     )}
@@ -545,21 +489,36 @@ export default function ApprovalInboxPage() {
               </div>
 
               <div className={styles.tableFooter}>
-                <p>총 32건 중 1-5 표시</p>
+                <p>
+                  총 {documents.length}건 중{" "}
+                  {filteredDocuments.length > 0
+                    ? `1-${filteredDocuments.length}`
+                    : "0"}
+                  표시
+                </p>
 
                 <div className={styles.pagination}>
-                  <button type="button">‹</button>
+                  <button type="button" aria-label="이전 페이지">
+                    ‹
+                  </button>
+
                   <button type="button" className={styles.currentPage}>
                     1
                   </button>
+
                   <button type="button">2</button>
+
                   <button type="button">3</button>
-                  <button type="button">›</button>
+
+                  <button type="button" aria-label="다음 페이지">
+                    ›
+                  </button>
                 </div>
               </div>
             </section>
           </main>
-          {isDetailOpen && (
+
+          {isDetailOpen && selectedDocument && (
             <aside className={styles.detailPanel}>
               <div className={styles.detailHeader}>
                 <div>
@@ -578,9 +537,15 @@ export default function ApprovalInboxPage() {
 
               <div className={styles.documentSummary}>
                 <div className={styles.summaryBadges}>
-                  <span className={styles.summaryBadgeUrgent}>긴급</span>
+                  <span className={styles.summaryBadgeUrgent}>
+                    {selectedDocument.priorityLabel}
+                  </span>
+
                   <span className={styles.summaryBadgeDeadline}>
-                    D-0 오늘 마감
+                    {selectedDocument.dDay}{" "}
+                    {selectedDocument.dDay === "D-0"
+                      ? "오늘 마감"
+                      : "처리 예정"}
                   </span>
                 </div>
 
@@ -588,7 +553,8 @@ export default function ApprovalInboxPage() {
 
                 <p>
                   <span>◷ {selectedDocument.requestedAt}</span>
-                  <span>첨부 1개</span>
+
+                  <span>{selectedDocument.attachment}</span>
                 </p>
               </div>
 
@@ -597,12 +563,17 @@ export default function ApprovalInboxPage() {
                   <h3>기안자 정보</h3>
 
                   <div className={styles.userCard}>
-                    <span className={styles.userAvatar}>
+                    <span
+                      className={`${styles.userAvatar} ${getAvatarClass(
+                        selectedDocument.avatarTone,
+                      )}`}
+                    >
                       {selectedDocument.drafterInitial}
                     </span>
 
                     <div className={styles.userInfo}>
                       <strong>{selectedDocument.drafter}</strong>
+
                       <small>
                         {selectedDocument.drafterDepartment} ·{" "}
                         {selectedDocument.drafterRole}
@@ -610,11 +581,11 @@ export default function ApprovalInboxPage() {
                     </div>
 
                     <div className={styles.userActions}>
-                      <button type="button" aria-label="메일">
+                      <button type="button" aria-label="메일 보내기">
                         <MailIcon />
                       </button>
 
-                      <button type="button" aria-label="추가">
+                      <button type="button" aria-label="사용자 추가">
                         <UserPlusIcon />
                       </button>
                     </div>
@@ -626,6 +597,7 @@ export default function ApprovalInboxPage() {
 
                   <div className={styles.approvalStep}>
                     <span className={styles.stepNumber}>1</span>
+
                     <span
                       className={`${styles.stepAvatar} ${styles.avatarBlue}`}
                     >
@@ -642,6 +614,7 @@ export default function ApprovalInboxPage() {
 
                   <div className={styles.approvalStep}>
                     <span className={styles.stepNumber}>2</span>
+
                     <span
                       className={`${styles.stepAvatar} ${styles.avatarGreen}`}
                     >
@@ -675,6 +648,7 @@ export default function ApprovalInboxPage() {
 
                     <div className={styles.fileInfo}>
                       <strong>{selectedDocument.fileName}</strong>
+
                       <small>{selectedDocument.fileMeta}</small>
                     </div>
 
@@ -691,21 +665,16 @@ export default function ApprovalInboxPage() {
                       <h3>의견 및 코멘트</h3>
                     </div>
 
-                    <span>2</span>
+                    <span>{selectedComments.length}</span>
                   </div>
 
                   <div className={styles.commentList}>
-                    {comments.map((comment) => (
+                    {selectedComments.map((comment) => (
                       <article key={comment.id} className={styles.commentItem}>
                         <span
-                          className={`${styles.commentAvatar} ${
-                            styles[
-                              `avatar${
-                                comment.tone.charAt(0).toUpperCase() +
-                                comment.tone.slice(1)
-                              }`
-                            ]
-                          }`}
+                          className={`${styles.commentAvatar} ${getAvatarClass(
+                            comment.avatarTone,
+                          )}`}
                         >
                           {comment.initial}
                         </span>
@@ -714,6 +683,7 @@ export default function ApprovalInboxPage() {
                           <header>
                             <div className={styles.commentMeta}>
                               <strong>{comment.name}</strong>
+
                               {comment.tag && <em>{comment.tag}</em>}
                             </div>
 
@@ -733,9 +703,25 @@ export default function ApprovalInboxPage() {
                       김
                     </span>
 
-                    <input type="text" placeholder="의견을 입력하세요..." />
+                    <input
+                      type="text"
+                      value={commentText}
+                      onChange={(event) => setCommentText(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          handleAddComment();
+                        }
+                      }}
+                      placeholder="의견을 입력하세요..."
+                    />
 
-                    <button type="button">전송</button>
+                    <button
+                      type="button"
+                      disabled={!commentText.trim()}
+                      onClick={handleAddComment}
+                    >
+                      전송
+                    </button>
                   </div>
                 </section>
               </div>
