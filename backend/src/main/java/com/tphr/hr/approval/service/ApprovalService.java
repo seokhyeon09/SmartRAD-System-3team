@@ -1,6 +1,6 @@
 package com.tphr.hr.approval.service;
 
-import com.tphr.hr.approval.dto.ApprovalDto;
+import com.tphr.hr.approval.dto.*;
 import com.tphr.hr.approval.entity.ApprovalAttachment;
 import com.tphr.hr.approval.entity.ApprovalDocument;
 import com.tphr.hr.approval.entity.ApprovalLine;
@@ -35,7 +35,7 @@ public class ApprovalService {
      * 1. 문서 기안 (Create Document)
      */
     @Transactional
-    public ApprovalDto.Response createDocument(ApprovalDto.CreateRequest request) {
+    public ApprovalResponse createDocument(ApprovalCreateRequest request) {
         // 프록시 객체로 조회 (Repository 없이 FK만 맵핑)
         Employee drafter = entityManager.getReference(Employee.class, request.getDraftedById());
         CommonCode docType = entityManager.getReference(CommonCode.class, request.getDocTypeCode());
@@ -91,7 +91,7 @@ public class ApprovalService {
      * 2. 결재 승인
      */
     @Transactional
-    public ApprovalDto.Response approveDocument(Long documentId, Long approverId) {
+    public ApprovalResponse approveDocument(Long documentId, Long approverId) {
         ApprovalDocument document = approvalDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
         
@@ -123,7 +123,7 @@ public class ApprovalService {
      * 3. 결재 반려
      */
     @Transactional
-    public ApprovalDto.Response rejectDocument(Long documentId, Long approverId, String reason) {
+    public ApprovalResponse rejectDocument(Long documentId, Long approverId, String reason) {
         ApprovalDocument document = approvalDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
 
@@ -144,15 +144,15 @@ public class ApprovalService {
      * 4. 문서 상세 조회
      */
     @Transactional(readOnly = true)
-    public ApprovalDto.DetailResponse getApprovalDetail(Long documentId) {
+    public ApprovalDetailResponse getApprovalDetail(Long documentId) {
         ApprovalDocument document = approvalDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
         
         List<ApprovalLine> lines = approvalLineRepository.findByDocumentIdOrderBySequenceAsc(documentId);
         List<ApprovalAttachment> attachments = approvalAttachmentRepository.findByDocumentId(documentId);
 
-        List<ApprovalDto.LineResponse> lineResponses = lines.stream().map(line ->
-                ApprovalDto.LineResponse.builder()
+        List<ApprovalLineResponse> lineResponses = lines.stream().map(line ->
+                ApprovalLineResponse.builder()
                         .id(line.getId())
                         .sequence(line.getSequence())
                         .approverName(line.getApprover().getName())
@@ -162,8 +162,8 @@ public class ApprovalService {
                         .build()
         ).collect(Collectors.toList());
 
-        List<ApprovalDto.AttachmentResponse> attachmentResponses = attachments.stream().map(att ->
-                ApprovalDto.AttachmentResponse.builder()
+        List<ApprovalAttachmentResponse> attachmentResponses = attachments.stream().map(att ->
+                ApprovalAttachmentResponse.builder()
                         .id(att.getId())
                         .fileName(att.getFileName())
                         .filePath(att.getFilePath())
@@ -171,7 +171,7 @@ public class ApprovalService {
                         .build()
         ).collect(Collectors.toList());
 
-        return ApprovalDto.DetailResponse.builder()
+        return ApprovalDetailResponse.builder()
                 .document(mapToResponse(document))
                 .content(document.getContent())
                 .approvalLines(lineResponses)
@@ -203,7 +203,7 @@ public class ApprovalService {
      * 6. 결재 문서 수정 (제목 및 내용)
      */
     @Transactional
-    public ApprovalDto.Response updateDocument(Long documentId, Long drafterId, ApprovalDto.UpdateRequest request) {
+    public ApprovalResponse updateDocument(Long documentId, Long drafterId, ApprovalUpdateRequest request) {
         ApprovalDocument document = approvalDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException("문서를 찾을 수 없습니다."));
 
@@ -229,8 +229,8 @@ public class ApprovalService {
 
     // --- Helper Methods ---
 
-    private ApprovalDto.Response mapToResponse(ApprovalDocument doc) {
-        return ApprovalDto.Response.builder()
+    private ApprovalResponse mapToResponse(ApprovalDocument doc) {
+        return ApprovalResponse.builder()
                 .id(doc.getId())
                 .docNumber(doc.getDocNumber())
                 .title(doc.getTitle())

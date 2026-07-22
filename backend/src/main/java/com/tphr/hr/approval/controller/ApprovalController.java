@@ -1,6 +1,9 @@
 package com.tphr.hr.approval.controller;
 
-import com.tphr.hr.approval.dto.ApprovalDto;
+import com.tphr.hr.approval.dto.ApprovalCreateRequest;
+import com.tphr.hr.approval.dto.ApprovalDetailResponse;
+import com.tphr.hr.approval.dto.ApprovalResponse;
+import com.tphr.hr.approval.dto.ApprovalUpdateRequest;
 import com.tphr.hr.approval.service.ApprovalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +20,8 @@ public class ApprovalController {
      * 1. 기안 문서 생성 (결재 올리기)
      */
     @PostMapping
-    public ResponseEntity<ApprovalDto.Response> createDocument(@RequestBody ApprovalDto.CreateRequest request) {
-        ApprovalDto.Response response = approvalService.createDocument(request);
+    public ResponseEntity<ApprovalResponse> createDocument(@RequestBody ApprovalCreateRequest request) {
+        ApprovalResponse response = approvalService.createDocument(request);
         return ResponseEntity.ok(response);
     }
 
@@ -28,11 +31,11 @@ public class ApprovalController {
      * @param approverId 현재 승인하려는 사람의 사번 (실제로는 JWT Token에서 추출)
      */
     @PatchMapping("/{id}/approve")
-    public ResponseEntity<ApprovalDto.Response> approveDocument(
+    public ResponseEntity<ApprovalResponse> approveDocument(
             @PathVariable Long id,
             @RequestParam Long approverId) {
         // TODO: 향후 Spring Security 적용 시 @RequestParam 대신 @AuthenticationPrincipal 등으로 인증 정보 사용
-        ApprovalDto.Response response = approvalService.approveDocument(id, approverId);
+        ApprovalResponse response = approvalService.approveDocument(id, approverId);
         return ResponseEntity.ok(response);
     }
 
@@ -43,11 +46,11 @@ public class ApprovalController {
      * @param reason 반려 사유
      */
     @PatchMapping("/{id}/reject")
-    public ResponseEntity<ApprovalDto.Response> rejectDocument(
+    public ResponseEntity<ApprovalResponse> rejectDocument(
             @PathVariable Long id,
             @RequestParam Long approverId,
             @RequestParam String reason) {
-        ApprovalDto.Response response = approvalService.rejectDocument(id, approverId, reason);
+        ApprovalResponse response = approvalService.rejectDocument(id, approverId, reason);
         return ResponseEntity.ok(response);
     }
 
@@ -55,8 +58,8 @@ public class ApprovalController {
      * 4. 결재 문서 상세 내역 조회
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApprovalDto.DetailResponse> getApprovalDetail(@PathVariable Long id) {
-        ApprovalDto.DetailResponse response = approvalService.getApprovalDetail(id);
+    public ResponseEntity<ApprovalDetailResponse> getApprovalDetail(@PathVariable Long id) {
+        ApprovalDetailResponse response = approvalService.getApprovalDetail(id);
         return ResponseEntity.ok(response);
     }
 
@@ -75,11 +78,11 @@ public class ApprovalController {
      * @param drafterId 기안자 사번 (실제로는 JWT Token에서 추출)
      */
     @PutMapping("/{id}")
-    public ResponseEntity<ApprovalDto.Response> updateDocument(
+    public ResponseEntity<ApprovalResponse> updateDocument(
             @PathVariable Long id,
             @RequestParam Long drafterId,
-            @RequestBody ApprovalDto.UpdateRequest request) {
-        ApprovalDto.Response response = approvalService.updateDocument(id, drafterId, request);
+            @RequestBody ApprovalUpdateRequest request) {
+        ApprovalResponse response = approvalService.updateDocument(id, drafterId, request);
         return ResponseEntity.ok(response);
     }
 }
