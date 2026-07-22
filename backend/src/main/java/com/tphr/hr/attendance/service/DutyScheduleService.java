@@ -34,6 +34,7 @@ public class DutyScheduleService {
     private final DepartmentRepository departmentRepository;
     private final EmployeeRepository employeeRepository;
     private final CommonCodeRepository commonCodeRepository;
+    private final com.tphr.hr.employee.repository.EmploymentHistoryRepository employmentHistoryRepository;
     
     // 권한 검증용
     private final MenuRepository menuRepository;
@@ -78,7 +79,7 @@ public class DutyScheduleService {
                 .build();
 
         DutySchedule saved = dutyScheduleRepository.save(schedule);
-        return mapToResponse(saved, List.of());
+        return mapToResponse(saved, List.of(), null);
     }
 
     @Transactional
@@ -106,7 +107,7 @@ public class DutyScheduleService {
         }).collect(Collectors.toList());
 
         List<DutyScheduleEntry> savedEntries = dutyScheduleEntryRepository.saveAll(newEntries);
-        return mapToResponse(schedule, savedEntries);
+        return mapToResponse(schedule, savedEntries, null);
     }
 
     @Transactional
@@ -125,7 +126,7 @@ public class DutyScheduleService {
                 .build();
 
         DutySchedule saved = dutyScheduleRepository.save(confirmed);
-        return mapToResponse(saved, dutyScheduleEntryRepository.findByDutyScheduleId(scheduleId));
+        return mapToResponse(saved, dutyScheduleEntryRepository.findByDutyScheduleId(scheduleId), null);
     }
 
     @Transactional(readOnly = true)
@@ -134,10 +135,136 @@ public class DutyScheduleService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 부서의 특정 월 듀티표가 존재하지 않습니다."));
         
         List<DutyScheduleEntry> entries = dutyScheduleEntryRepository.findByDutyScheduleId(schedule.getId());
-        return mapToResponse(schedule, entries);
+        return mapToResponse(schedule, entries, null);
     }
 
-    private DutyScheduleResponse mapToResponse(DutySchedule schedule, List<DutyScheduleEntry> entries) {
+    @Transactional
+    public DutyScheduleResponse autoGenerate(Long scheduleId, com.tphr.hr.attendance.dto.DutyScheduleAutoGenerateRequest request) {
+        validateWritePermission(request.getRequesterId());
+
+        DutySchedule schedule = dutyScheduleRepository.findById(scheduleId)
+                .orElseThrow(() -> new IllegalArgumentException("듀티표를 찾을 수 없습니다."));
+
+        // 1. 해당 부서의 교대근무자 조회
+        List<Employee> allShiftWorkers = employeeRepository.findAll().stream()
+                .filter(e -> e.getDepartment() != null && e.getDepartment().getId().equals(schedule.getDepartment().getId()))
+                .filter(Employee::getIsShiftWorker)
+                .collect(Collectors.toList());
+
+        // 2. 휴직/퇴직자 배제 로직 (V8 스크립트로 추가된 STS_LEAVE, STS_RETIRE 체크)
+        java.time.LocalDate monthStart = java.time.LocalDate.of(schedule.getScheduleYear(), schedule.getScheduleMonth(), 1);
+        java.time.LocalDate monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth());
+        
+        List<Long> allWorkerIds = allShiftWorkers.stream().map(Employee::getId).collect(Collectors.toList());
+        
+        List<Long> excludedEmployeeIds = java.util.Collections.emptyList();
+        if (!allWorkerIds.isEmpty()) {
+            List<com.tphr.hr.employee.entity.EmploymentHistory> leaves = employmentHistoryRepository.findOverlappingLeavesForEmployees(allWorkerIds, monthStart, monthEnd);
+            excludedEmployeeIds = leaves.stream().map(h -> h.getEmployee().getId()).distinct().collect(Collectors.toList());
+        }
+
+        final List<Long> finalExcluded = excludedEmployeeIds;
+        List<Employee> activeWorkers = allShiftWorkers.stream()
+                .filter(e -> !finalExcluded.contains(e.getId()))
+                .collect(Collectors.toList());
+
+        // 3. 자동 생성 알고리즘 초기화
+        dutyScheduleEntryRepository.deleteByDutyScheduleId(scheduleId);
+        List<DutyScheduleEntry> newEntries = new java.util.ArrayList<>();
+        List<String> warnings = new java.util.ArrayList<>();
+
+        CommonCode shiftD = commonCodeRepository.findById("D").orElseGet(() -> CommonCode.builder().code("D").name("데이").build());
+        CommonCode shiftE = commonCodeRepository.findById("E").orElseGet(() -> CommonCode.builder().code("E").name("이브닝").build());
+        CommonCode shiftN = commonCodeRepository.findById("N").orElseGet(() -> CommonCode.builder().code("N").name("나이트").build());
+        CommonCode shiftOFF = commonCodeRepository.findById("OFF").orElseGet(() -> CommonCode.builder().code("OFF").name("오프").build());
+
+        java.util.Map<Long, Integer> nightCounts = new java.util.HashMap<>();
+        java.util.Map<Long, Integer> consecutiveNightCounts = new java.util.HashMap<>();
+        java.util.Map<Long, String> yesterdayShifts = new java.util.HashMap<>();
+
+        activeWorkers.forEach(w -> {
+            nightCounts.put(w.getId(), 0);
+            consecutiveNightCounts.put(w.getId(), 0);
+            yesterdayShifts.put(w.getId(), "OFF");
+        });
+
+        // 4. 알고리즘: 각 일자별로 D, E, N 할당
+        for (int day = 1; day <= monthEnd.getDayOfMonth(); day++) {
+            java.time.LocalDate currentDate = monthStart.withDayOfMonth(day);
+            java.util.List<Employee> availableForDay = new java.util.ArrayList<>(activeWorkers);
+            java.util.Collections.shuffle(availableForDay); // 매일 공평한 랜덤 배분
+
+            int dCount = 0, eCount = 0, nCount = 0;
+
+            for (Employee emp : availableForDay) {
+                Long empId = emp.getId();
+                String yesterdayShift = yesterdayShifts.get(empId);
+                int currentConsecutiveN = consecutiveNightCounts.get(empId);
+                int currentTotalN = nightCounts.get(empId);
+
+                CommonCode assignedShift = shiftOFF;
+
+                // 시니어 강제 배정 (requireSenior = true일 경우 1급 이상 또는 수간호사 먼저 배정)
+                boolean isSenior = "POS_01".equals(emp.getPosition().getCode()) || "POS_02".equals(emp.getPosition().getCode()) || "POS_03".equals(emp.getPosition().getCode());
+
+                // N -> D, N -> E 금지 룰
+                if ("N".equals(yesterdayShift)) {
+                    // 전날 나이트라면 오늘은 무조건 N 아니면 OFF
+                    if (nCount < 2 && currentTotalN < request.getMaxNightPerMonth() && currentConsecutiveN < 3) {
+                        assignedShift = shiftN;
+                        nCount++;
+                    } else {
+                        assignedShift = shiftOFF;
+                    }
+                } else if (currentConsecutiveN >= 3) {
+                    // 3일 연속 나이트 시 무조건 OFF
+                    assignedShift = shiftOFF;
+                } else {
+                    // D, E, N 배정 (우선순위: D -> E -> N -> OFF)
+                    if (dCount < 2) {
+                        if (!request.getRequireSenior() || (request.getRequireSenior() && (dCount == 1 || isSenior))) {
+                            assignedShift = shiftD;
+                            dCount++;
+                        } else if (!request.getRequireSenior()) {
+                            assignedShift = shiftD; dCount++;
+                        }
+                    } else if (eCount < 2) {
+                        assignedShift = shiftE;
+                        eCount++;
+                    } else if (nCount < 2 && currentTotalN < request.getMaxNightPerMonth()) {
+                        assignedShift = shiftN;
+                        nCount++;
+                    }
+                }
+
+                // 상태 업데이트
+                if (assignedShift.getCode().equals("N")) {
+                    nightCounts.put(empId, currentTotalN + 1);
+                    consecutiveNightCounts.put(empId, currentConsecutiveN + 1);
+                } else {
+                    consecutiveNightCounts.put(empId, 0);
+                }
+                yesterdayShifts.put(empId, assignedShift.getCode());
+
+                newEntries.add(DutyScheduleEntry.builder()
+                        .dutySchedule(schedule)
+                        .employee(emp)
+                        .workDate(currentDate)
+                        .shiftType(assignedShift)
+                        .build());
+            }
+
+            // 규칙 ③ 인원 미달 경고
+            if (nCount < 1) {
+                warnings.add("경고: " + currentDate + " 나이트(N) 근무 인원 부족 (현재 " + nCount + "명)");
+            }
+        }
+
+        dutyScheduleEntryRepository.saveAll(newEntries);
+        return mapToResponse(schedule, newEntries, warnings);
+    }
+
+    private DutyScheduleResponse mapToResponse(DutySchedule schedule, List<DutyScheduleEntry> entries, List<String> warnings) {
         List<DutyScheduleEntryResponse> entryResponses = entries.stream().map(e -> DutyScheduleEntryResponse.builder()
                 .id(e.getId())
                 .employeeId(e.getEmployee().getId())
@@ -155,6 +282,7 @@ public class DutyScheduleService {
                 .scheduleMonth(schedule.getScheduleMonth())
                 .status(schedule.getStatus())
                 .entries(entryResponses)
+                .warnings(warnings)
                 .build();
     }
 }
