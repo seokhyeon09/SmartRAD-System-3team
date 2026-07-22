@@ -1,6 +1,6 @@
 package com.tphr.hr.payroll.controller;
 
-import com.tphr.hr.payroll.dto.PayrollDto;
+import com.tphr.hr.payroll.dto.*;
 import com.tphr.hr.payroll.service.PayrollService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,10 +21,10 @@ public class PayrollController {
      * @param month 귀속 월 (예: 7)
      */
     @PostMapping("/{year}/{month}/calculate")
-    public ResponseEntity<List<PayrollDto.Response>> calculatePayroll(
+    public ResponseEntity<List<PayrollResponse>> calculatePayroll(
             @PathVariable Integer year,
             @PathVariable Integer month) {
-        List<PayrollDto.Response> responses = payrollService.calculatePayroll(year, month);
+        List<PayrollResponse> responses = payrollService.calculatePayroll(year, month);
         return ResponseEntity.ok(responses);
     }
 
@@ -32,10 +32,10 @@ public class PayrollController {
      * 특정 연/월 전 직원 급여 대장 단순 리스트 조회 (재계산 안함)
      */
     @GetMapping("/{year}/{month}")
-    public ResponseEntity<List<PayrollDto.Response>> getPayrollList(
+    public ResponseEntity<List<PayrollResponse>> getPayrollList(
             @PathVariable Integer year,
             @PathVariable Integer month) {
-        List<PayrollDto.Response> responses = payrollService.getPayrollList(year, month);
+        List<PayrollResponse> responses = payrollService.getPayrollList(year, month);
         return ResponseEntity.ok(responses);
     }
 
@@ -44,8 +44,8 @@ public class PayrollController {
      * @param recordId 급여 마스터(Record) ID
      */
     @PatchMapping("/{recordId}/confirm")
-    public ResponseEntity<PayrollDto.Response> confirmPayroll(@PathVariable Long recordId) {
-        PayrollDto.Response response = payrollService.confirmPayroll(recordId);
+    public ResponseEntity<PayrollResponse> confirmPayroll(@PathVariable Long recordId) {
+        PayrollResponse response = payrollService.confirmPayroll(recordId);
         return ResponseEntity.ok(response);
     }
 
@@ -56,11 +56,11 @@ public class PayrollController {
      * @param month 귀속 월
      */
     @GetMapping("/{employeeId}/{year}/{month}")
-    public ResponseEntity<PayrollDto.RecordWithDetailsResponse> getPayrollDetails(
+    public ResponseEntity<PayrollRecordWithDetailsResponse> getPayrollDetails(
             @PathVariable Long employeeId,
             @PathVariable Integer year,
             @PathVariable Integer month) {
-        PayrollDto.RecordWithDetailsResponse response = payrollService.getPayrollDetails(employeeId, year, month);
+        PayrollRecordWithDetailsResponse response = payrollService.getPayrollDetails(employeeId, year, month);
         return ResponseEntity.ok(response);
     }
 
@@ -78,9 +78,9 @@ public class PayrollController {
      * 5. 특정 직원 급여 수동 추가 (생성)
      */
     @PostMapping("/manual")
-    public ResponseEntity<PayrollDto.Response> createManualPayroll(
-            @RequestBody PayrollDto.ManualRequest request) {
-        PayrollDto.Response response = payrollService.createManualPayroll(request);
+    public ResponseEntity<PayrollResponse> createManualPayroll(
+            @RequestBody PayrollManualRequest request) {
+        PayrollResponse response = payrollService.createManualPayroll(request);
         return ResponseEntity.ok(response);
     }
 
@@ -88,10 +88,10 @@ public class PayrollController {
      * 6. 특정 급여 대장 수동 금액 수정
      */
     @PutMapping("/{recordId}")
-    public ResponseEntity<PayrollDto.Response> updatePayroll(
+    public ResponseEntity<PayrollResponse> updatePayroll(
             @PathVariable Long recordId,
-            @RequestBody PayrollDto.ManualRequest request) {
-        PayrollDto.Response response = payrollService.updatePayroll(recordId, request);
+            @RequestBody PayrollManualRequest request) {
+        PayrollResponse response = payrollService.updatePayroll(recordId, request);
         return ResponseEntity.ok(response);
     }
 }

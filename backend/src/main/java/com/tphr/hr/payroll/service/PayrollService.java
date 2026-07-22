@@ -2,7 +2,7 @@ package com.tphr.hr.payroll.service;
 
 import com.tphr.hr.employee.entity.Employee;
 import com.tphr.hr.employee.repository.EmployeeRepository;
-import com.tphr.hr.payroll.dto.PayrollDto;
+import com.tphr.hr.payroll.dto.*;
 import com.tphr.hr.payroll.entity.PayrollDetail;
 import com.tphr.hr.payroll.entity.PayrollRecord;
 import com.tphr.hr.payroll.repository.PayrollDetailRepository;
@@ -36,7 +36,7 @@ public class PayrollService {
      * 특정 연/월의 전 직원 급여를 자동 계산하여 저장합니다.
      */
     @Transactional
-    public List<PayrollDto.Response> calculatePayroll(Integer year, Integer month) {
+    public List<PayrollResponse> calculatePayroll(Integer year, Integer month) {
         log.info("Starting payroll calculation for {}/{}", year, month);
         List<Employee> activeEmployees = employeeRepository.findByAccountStatus("ACTIVE");
         List<PayrollRecord> calculatedRecords = new ArrayList<>();
@@ -108,7 +108,7 @@ public class PayrollService {
      * 특정 연/월의 모든 급여 대장 조회 (조회용)
      */
     @Transactional(readOnly = true)
-    public List<PayrollDto.Response> getPayrollList(Integer year, Integer month) {
+    public List<PayrollResponse> getPayrollList(Integer year, Integer month) {
         List<PayrollRecord> records = payrollRecordRepository.findByPayrollYearAndPayrollMonth(year, month);
         return records.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
@@ -117,7 +117,7 @@ public class PayrollService {
      * 급여 대장을 마감(확정) 처리합니다.
      */
     @Transactional
-    public PayrollDto.Response confirmPayroll(Long recordId) {
+    public PayrollResponse confirmPayroll(Long recordId) {
         PayrollRecord record = payrollRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("Payroll record not found"));
         
@@ -146,7 +146,7 @@ public class PayrollService {
      * 특정 사원의 특정 월 급여를 수동으로 단건 추가(생성)합니다.
      */
     @Transactional
-    public PayrollDto.Response createManualPayroll(PayrollDto.ManualRequest request) {
+    public PayrollResponse createManualPayroll(PayrollManualRequest request) {
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new IllegalArgumentException("Employee not found"));
 
@@ -184,7 +184,7 @@ public class PayrollService {
      * 특정 급여 대장의 금액을 수동으로 수정합니다.
      */
     @Transactional
-    public PayrollDto.Response updatePayroll(Long recordId, PayrollDto.ManualRequest request) {
+    public PayrollResponse updatePayroll(Long recordId, PayrollManualRequest request) {
         PayrollRecord record = payrollRecordRepository.findById(recordId)
                 .orElseThrow(() -> new IllegalArgumentException("Payroll record not found"));
 
@@ -212,14 +212,14 @@ public class PayrollService {
      * 특정 사원의 급여 명세서 상세 조회
      */
     @Transactional(readOnly = true)
-    public PayrollDto.RecordWithDetailsResponse getPayrollDetails(Long employeeId, Integer year, Integer month) {
+    public PayrollRecordWithDetailsResponse getPayrollDetails(Long employeeId, Integer year, Integer month) {
         PayrollRecord record = payrollRecordRepository.findByEmployeeIdAndPayrollYearAndPayrollMonth(employeeId, year, month)
                 .orElseThrow(() -> new IllegalArgumentException("Payroll record not found"));
 
         List<PayrollDetail> details = payrollDetailRepository.findByPayrollRecordId(record.getId());
 
-        List<PayrollDto.DetailResponse> detailResponses = details.stream()
-                .map(d -> PayrollDto.DetailResponse.builder()
+        List<PayrollDetailResponse> detailResponses = details.stream()
+                .map(d -> PayrollDetailResponse.builder()
                         .id(d.getId())
                         .itemType(d.getItemType())
                         .itemName(d.getItemName())
@@ -227,14 +227,14 @@ public class PayrollService {
                         .build())
                 .collect(Collectors.toList());
 
-        return PayrollDto.RecordWithDetailsResponse.builder()
+        return PayrollRecordWithDetailsResponse.builder()
                 .record(mapToResponse(record))
                 .details(detailResponses)
                 .build();
     }
 
-    private PayrollDto.Response mapToResponse(PayrollRecord record) {
-        return PayrollDto.Response.builder()
+    private PayrollResponse mapToResponse(PayrollRecord record) {
+        return PayrollResponse.builder()
                 .id(record.getId())
                 .employeeId(record.getEmployee().getId())
                 .employeeName(record.getEmployee().getName())
