@@ -88,10 +88,6 @@ public class DutyScheduleService {
         DutySchedule schedule = dutyScheduleRepository.findById(scheduleId)
                 .orElseThrow(() -> new IllegalArgumentException("듀티표를 찾을 수 없습니다."));
 
-        if ("CONFIRMED".equals(schedule.getStatus())) {
-            throw new IllegalStateException("이미 확정된 듀티표는 수정할 수 없습니다.");
-        }
-
         // 기존 항목 모두 삭제 후 새로 삽입 (단순화된 bulk-replace 로직)
         dutyScheduleEntryRepository.deleteByDutyScheduleId(scheduleId);
 
