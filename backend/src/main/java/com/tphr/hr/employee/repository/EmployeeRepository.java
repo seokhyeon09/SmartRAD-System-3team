@@ -9,7 +9,6 @@ import java.util.Optional;
 
 public interface EmployeeRepository extends JpaRepository<Employee, Long>, JpaSpecificationExecutor<Employee> {
 
-    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"department", "position", "roleGroup"})
     Optional<Employee> findByEmpNo(String empNo);
 
     boolean existsByEmpNo(String empNo);
