@@ -79,7 +79,13 @@ export default function DashboardSidebar() {
       const userStr = localStorage.getItem('userProfile');
       if (userStr) {
         const user = JSON.parse(userStr);
-        if (user.roleGroupName === '시스템 관리자') {
+        if (user.permissions) {
+          const sysPerm = user.permissions.find((p: any) => p.menuCode === 'SYSTEM_ADMIN');
+          if (sysPerm && sysPerm.canRead) {
+            setIsAdmin(true);
+          }
+        } else if (user.roleGroupName === '시스템 관리자') {
+          // Fallback if permissions aren't loaded yet
           setIsAdmin(true);
         }
       }

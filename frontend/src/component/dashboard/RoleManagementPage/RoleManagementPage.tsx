@@ -78,6 +78,7 @@ const getRoleBadgeStyle = (roleName: string) => {
 
 export default function RoleManagementPage() {
   const [activeTab, setActiveTab] = useState<TabType>("EMPLOYEE");
+  const [canEdit, setCanEdit] = useState(false);
 
   // 권한 체크 로직 추가
   useEffect(() => {
@@ -85,8 +86,21 @@ export default function RoleManagementPage() {
       const userStr = localStorage.getItem('userProfile');
       if (userStr) {
         const user = JSON.parse(userStr);
-        if (user.roleGroupName !== '시스템 관리자') {
-          alert('시스템 관리자만 접근할 수 있는 페이지입니다.');
+        let hasAccess = false;
+        
+        if (user.permissions) {
+          const sysPerm = user.permissions.find((p: any) => p.menuCode === 'SYSTEM_ADMIN');
+          if (sysPerm && sysPerm.canRead) {
+            hasAccess = true;
+            setCanEdit(sysPerm.canWrite);
+          }
+        } else if (user.roleGroupName === '시스템 관리자') {
+          hasAccess = true; // Fallback
+          setCanEdit(true);
+        }
+
+        if (!hasAccess) {
+          alert('시스템 관리자 메뉴에 대한 조회 권한이 없습니다.');
           window.location.href = '/dashboard';
         }
       } else {
@@ -600,8 +614,8 @@ export default function RoleManagementPage() {
                         <p>아래 체크박스를 통해 각 메뉴별 접근 권한을 세밀하게 설정하세요.</p>
                       </div>
                       <div className={styles.rightActionBtns}>
-                        <button className={styles.outlineBtn}><RotateCcw size={16} /> 초기화</button>
-                        <button className={styles.outlineBtn}><MonitorPlay size={16} /> 미리보기</button>
+                        <button className={styles.outlineBtn} disabled={!canEdit}><RotateCcw size={16} /> 초기화</button>
+                        <button className={styles.outlineBtn} disabled={!canEdit}><MonitorPlay size={16} /> 미리보기</button>
                       </div>
                     </div>
 
@@ -732,10 +746,11 @@ export default function RoleManagementPage() {
                         <button
                           className={styles.cancelBtn}
                           onClick={() => selectedRoleGroupId && fetchPermissions(selectedRoleGroupId)}
+                          disabled={!canEdit}
                         >
                           취소
                         </button>
-                        <button className={styles.saveBtn} onClick={handleSavePermissions}>
+                        <button className={styles.saveBtn} onClick={handleSavePermissions} disabled={!canEdit}>
                           <FileText size={16} /> 저장하기
                         </button>
                       </div>
