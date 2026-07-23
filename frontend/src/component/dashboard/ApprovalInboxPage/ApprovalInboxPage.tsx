@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import DashboardSidebar from "@/component/dashboard/DashboardSidebar/DashboardSidebar";
+
 
 import type {
   ApprovalComment,
@@ -272,36 +272,7 @@ export default function ApprovalInboxPage({
   };
 
   return (
-    <div className={styles.dashboard}>
-      <DashboardSidebar />
-
-      <div className={styles.pageArea}>
-        <header className={styles.topHeader}>
-          <label className={styles.globalSearch}>
-            <SearchIcon />
-
-            <input type="search" placeholder="직원, 부서, 문서를 검색하세요" />
-          </label>
-
-          <div className={styles.topActions}>
-            <button
-              type="button"
-              className={styles.notificationButton}
-              aria-label="알림"
-            >
-              <BellIcon />
-            </button>
-
-            <div className={styles.profile}>
-              <span>김</span>
-
-              <div>
-                <strong>김관리</strong>
-                <small>인사팀 · 관리자</small>
-              </div>
-            </div>
-          </div>
-        </header>
+    <>
 
         <div
           className={`${styles.contentGrid} ${
@@ -738,7 +709,6 @@ export default function ApprovalInboxPage({
             </aside>
           )}
         </div>
-      </div>
-    </div>
+    </>
   );
 }

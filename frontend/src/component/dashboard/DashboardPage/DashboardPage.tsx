@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import DashboardSidebar from "../DashboardSidebar/DashboardSidebar";
+
 
 import type { DashboardData } from "@/types/dashboard";
 
@@ -50,41 +50,7 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
   }, []);
 
   return (
-    <div className={styles.dashboard}>
-      <DashboardSidebar />
-
-      <div className={styles.pageArea}>
-        {/* 기존 상단 헤더 */}
-        <header className={styles.topHeader}>
-          <label className={styles.search}>
-            <span>⌕</span>
-
-            <input type="search" placeholder="직원, 부서, 문서를 검색하세요" />
-          </label>
-
-          <div className={styles.profile}>
-            <div className={styles.profileInfo}>
-              <span>{profile.initial}</span>
-              <div>
-                <strong>{profile.name}</strong>
-                <small>
-                  {profile.department} · {profile.role}
-                </small>
-              </div>
-            </div>
-            
-            <button
-              className={styles.logoutBtn}
-              onClick={() => {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('userProfile');
-                window.location.href = '/login';
-              }}
-            >
-              로그아웃
-            </button>
-          </div>
-        </header>
+    <>
 
         <main className={styles.main}>
           <section className={styles.welcome}>
@@ -253,7 +219,6 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
             </article>
           </section>
         </main>
-      </div>
-    </div>
+    </>
   );
 }

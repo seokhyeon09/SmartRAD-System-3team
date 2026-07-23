@@ -265,7 +265,7 @@
 
 @media (max-width: 1000px) {
   .dashboard {
-    grid-template-columns: 86px minmax(0, 1fr);
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 
   .summaryGrid {
@@ -274,6 +274,12 @@
 
   .middleGrid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .dashboard {
+    grid-template-columns: 200px minmax(0, 1fr);
   }
 }
 

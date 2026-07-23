@@ -72,27 +72,6 @@ function SidebarIcon({ name }: SidebarIconProps) {
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    try {
-      const userStr = localStorage.getItem('userProfile');
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (user.permissions) {
-          const sysPerm = user.permissions.find((p: any) => p.menuCode === 'SYSTEM_ADMIN');
-          if (sysPerm && sysPerm.canRead) {
-            setIsAdmin(true);
-          }
-        } else if (user.roleGroupName === '시스템 관리자') {
-          // Fallback if permissions aren't loaded yet
-          setIsAdmin(true);
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
 
   const isDashboardPage = pathname === "/dashboard";
 
@@ -102,24 +81,39 @@ export default function DashboardSidebar() {
 
   const isApprovalRoute = isApprovalInboxPage || isDraftDocumentsPage;
 
-  const [isApprovalOpen, setIsApprovalOpen] = useState(isApprovalRoute);
+  const isCommonCodePage = pathname.startsWith("/dashboard/system/common-code");
+  const isSystemRoute = pathname.startsWith("/dashboard/system");
 
-  const isStatutoryPage = pathname.startsWith("/dashboard/statutory");
-  const isPayrollRoute = isStatutoryPage; // Add other payroll pages later
+  const isPayrollInfoPage = pathname.startsWith("/dashboard/payroll/info");
+  const isPayrollProcessingPage = pathname.startsWith("/dashboard/payroll/processing");
+  const isPayrollStatutoryPage = pathname.startsWith("/dashboard/payroll/statutory");
+  const isPayrollRoute = isPayrollInfoPage || isPayrollProcessingPage || isPayrollStatutoryPage;
+
+  const [isApprovalOpen, setIsApprovalOpen] = useState(isApprovalRoute);
+  const [isSystemOpen, setIsSystemOpen] = useState(isSystemRoute);
   const [isPayrollOpen, setIsPayrollOpen] = useState(isPayrollRoute);
 
-  // 결재 대기함 또는 기안 문서함에 들어가면 자동으로 펼침
+  // When pathname changes (navigation happens), 
+  // ensure the active route's menu is open and others are closed.
   useEffect(() => {
-    setIsApprovalOpen(isApprovalRoute);
-  }, [isApprovalRoute]);
-
-  useEffect(() => {
-    setIsPayrollOpen(isPayrollRoute);
-  }, [isPayrollRoute]);
+    if (isApprovalRoute) {
+      setIsApprovalOpen(true);
+      setIsSystemOpen(false);
+      setIsPayrollOpen(false);
+    } else if (isSystemRoute) {
+      setIsSystemOpen(true);
+      setIsApprovalOpen(false);
+      setIsPayrollOpen(false);
+    } else if (isPayrollRoute) {
+      setIsPayrollOpen(true);
+      setIsApprovalOpen(false);
+      setIsSystemOpen(false);
+    }
+  }, [pathname]);
 
   return (
     <aside className={styles.sidebar}>
-      <Link href="/dashboard" className={styles.brand}>
+      <Link href="/" className={styles.brand}>
         <span className={styles.brandSymbol}>＋</span>
 
         <span className={styles.brandText}>
@@ -153,7 +147,7 @@ export default function DashboardSidebar() {
             className={`${styles.sideLink} ${
               isApprovalRoute || isApprovalOpen ? styles.groupActive : ""
             }`}
-            onClick={() => setIsApprovalOpen((previous) => !previous)}
+            onClick={() => setIsApprovalOpen(prev => !prev)}
             aria-expanded={isApprovalOpen}
             aria-controls="electronic-approval-submenu"
           >
@@ -208,13 +202,13 @@ export default function DashboardSidebar() {
         </button>
 
         {/* 급여관리 */}
-        <div className={styles.sideGroup}>
+        <div className={styles.menuGroup}>
           <button
             type="button"
-            className={`${styles.sideLink} ${styles.groupToggle} ${
+            className={`${styles.sideLink} ${
               isPayrollRoute || isPayrollOpen ? styles.groupActive : ""
             }`}
-            onClick={() => setIsPayrollOpen(!isPayrollOpen)}
+            onClick={() => setIsPayrollOpen(prev => !prev)}
             aria-expanded={isPayrollOpen}
             aria-controls="payroll-submenu"
           >
@@ -239,32 +233,90 @@ export default function DashboardSidebar() {
             className={`${styles.subMenu} ${
               isPayrollOpen ? styles.subMenuOpen : ""
             }`}
+            aria-hidden={!isPayrollOpen}
           >
             <Link
-              href="/dashboard/statutory"
-              className={isStatutoryPage ? styles.subMenuActive : ""}
-              aria-current={isStatutoryPage ? "page" : undefined}
+              href="/dashboard/payroll/info"
+              className={isPayrollInfoPage ? styles.subMenuActive : ""}
+              aria-current={isPayrollInfoPage ? "page" : undefined}
+            >
+              기본 정보 관리
+            </Link>
+
+            <Link
+              href="/dashboard/payroll/processing"
+              className={isPayrollProcessingPage ? styles.subMenuActive : ""}
+              aria-current={isPayrollProcessingPage ? "page" : undefined}
+            >
+              급여 처리
+            </Link>
+
+            <Link
+              href="/dashboard/payroll/statutory"
+              className={isPayrollStatutoryPage ? styles.subMenuActive : ""}
+              aria-current={isPayrollStatutoryPage ? "page" : undefined}
             >
               법정 신고
             </Link>
           </div>
         </div>
 
-        {isAdmin && (
-          <>
-            <p className={`${styles.menuTitle} ${styles.adminTitle}`}>ADMIN</p>
+        <p className={`${styles.menuTitle} ${styles.adminTitle}`}>ADMIN</p>
 
-            {/* 시스템 관리 */}
-            <button type="button" className={styles.sideLink}>
-              <span className={styles.iconBox}>
-                <SidebarIcon name="system" />
-              </span>
+        {/* 시스템 관리 */}
+        <div className={styles.menuGroup}>
+          <button
+            type="button"
+            className={`${styles.sideLink} ${
+              isSystemRoute || isSystemOpen ? styles.groupActive : ""
+            }`}
+            onClick={() => setIsSystemOpen(prev => !prev)}
+            aria-expanded={isSystemOpen}
+            aria-controls="system-management-submenu"
+          >
+            <span className={styles.iconBox}>
+              <SidebarIcon name="system" />
+            </span>
 
-              <span className={styles.menuLabel}>시스템 관리</span>
-              <span className={styles.arrow}>⌄</span>
-            </button>
-          </>
-        )}
+            <span className={styles.menuLabel}>시스템 관리</span>
+
+            <span
+              className={`${styles.arrow} ${
+                isSystemOpen ? styles.arrowOpen : ""
+              }`}
+              aria-hidden="true"
+            >
+              ⌄
+            </span>
+          </button>
+
+          <div
+            id="system-management-submenu"
+            className={`${styles.subMenu} ${
+              isSystemOpen ? styles.subMenuOpen : ""
+            }`}
+          >
+            <Link
+              href="/dashboard/system/user-permission"
+              prefetch={false}
+              className={`${styles.subMenuItem} ${
+                pathname === "/dashboard/system/user-permission"
+                  ? styles.subMenuActive
+                  : ""
+              }`}
+            >
+              사용자 권한 관리
+            </Link>
+
+            <Link
+              href="/dashboard/system/common-code"
+              className={isCommonCodePage ? styles.subMenuActive : ""}
+              aria-current={isCommonCodePage ? "page" : undefined}
+            >
+              공통 코드 관리
+            </Link>
+          </div>
+        </div>
       </nav>
     </aside>
   );
