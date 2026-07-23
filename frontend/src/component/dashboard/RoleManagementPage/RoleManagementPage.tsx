@@ -743,7 +743,6 @@ export default function RoleManagementPage() {
             )}
           </div>
         </div>
-      </div>
 
       {isInviteModalOpen && (
         <div className={styles.modalOverlay}>
