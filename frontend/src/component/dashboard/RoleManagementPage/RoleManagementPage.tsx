@@ -221,7 +221,7 @@ export default function RoleManagementPage() {
   };
 
   const handleStatusToggle = async (employeeId: number, currentStatus: string) => {
-    if (employeeId === loggedInUserId) {
+    if (loggedInUserId && Number(employeeId) === Number(loggedInUserId)) {
       alert("본인의 계정 상태는 변경할 수 없습니다.");
       return;
     }
@@ -494,7 +494,7 @@ export default function RoleManagementPage() {
                               <button
                                 className={`${styles.iconBtn} ${emp.accountStatus === "LOCKED" ? styles.lockedBtn : ""}`}
                                 onClick={() => handleStatusToggle(emp.id, emp.accountStatus)}
-                                disabled={emp.id === loggedInUserId || !canEdit}
+                                disabled={!canEdit}
                                 title={emp.id === loggedInUserId ? "본인 계정은 잠글 수 없습니다" : "계정 상태 변경"}
                               >
                                 {emp.accountStatus === "ACTIVE" ? <Unlock size={16} /> : <Lock size={16} />}
