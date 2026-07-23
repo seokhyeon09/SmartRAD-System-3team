@@ -62,15 +62,34 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
             <input type="search" placeholder="직원, 부서, 문서를 검색하세요" />
           </label>
 
-          <div className={styles.profile}>
-            <span>{profile.initial}</span>
-
-            <div>
-              <strong>{profile.name}</strong>
-              <small>
-                {profile.department} · {profile.role}
-              </small>
+          <div className={styles.profile} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span>{profile.initial}</span>
+              <div>
+                <strong>{profile.name}</strong>
+                <small>
+                  {profile.department} · {profile.role}
+                </small>
+              </div>
             </div>
+            
+            <button
+              onClick={() => window.location.href = '/login'}
+              style={{
+                padding: '0.4rem 0.8rem',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                background: '#f8fafc',
+                color: '#475569',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+              }}
+              onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+              onMouseOut={(e) => e.currentTarget.style.background = '#f8fafc'}
+            >
+              로그아웃
+            </button>
           </div>
         </header>
 
