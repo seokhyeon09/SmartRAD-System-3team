@@ -104,10 +104,18 @@ export default function DashboardSidebar() {
 
   const [isApprovalOpen, setIsApprovalOpen] = useState(isApprovalRoute);
 
+  const isStatutoryPage = pathname.startsWith("/dashboard/statutory");
+  const isPayrollRoute = isStatutoryPage; // Add other payroll pages later
+  const [isPayrollOpen, setIsPayrollOpen] = useState(isPayrollRoute);
+
   // 결재 대기함 또는 기안 문서함에 들어가면 자동으로 펼침
   useEffect(() => {
     setIsApprovalOpen(isApprovalRoute);
   }, [isApprovalRoute]);
+
+  useEffect(() => {
+    setIsPayrollOpen(isPayrollRoute);
+  }, [isPayrollRoute]);
 
   return (
     <aside className={styles.sidebar}>
@@ -200,14 +208,47 @@ export default function DashboardSidebar() {
         </button>
 
         {/* 급여관리 */}
-        <button type="button" className={styles.sideLink}>
-          <span className={styles.iconBox}>
-            <SidebarIcon name="payroll" />
-          </span>
+        <div className={styles.sideGroup}>
+          <button
+            type="button"
+            className={`${styles.sideLink} ${styles.groupToggle} ${
+              isPayrollRoute || isPayrollOpen ? styles.groupActive : ""
+            }`}
+            onClick={() => setIsPayrollOpen(!isPayrollOpen)}
+            aria-expanded={isPayrollOpen}
+            aria-controls="payroll-submenu"
+          >
+            <span className={styles.iconBox}>
+              <SidebarIcon name="payroll" />
+            </span>
 
-          <span className={styles.menuLabel}>급여관리</span>
-          <span className={styles.arrow}>⌄</span>
-        </button>
+            <span className={styles.menuLabel}>급여관리</span>
+
+            <span
+              className={`${styles.arrow} ${
+                isPayrollOpen ? styles.arrowOpen : ""
+              }`}
+              aria-hidden="true"
+            >
+              ⌄
+            </span>
+          </button>
+
+          <div
+            id="payroll-submenu"
+            className={`${styles.subMenu} ${
+              isPayrollOpen ? styles.subMenuOpen : ""
+            }`}
+          >
+            <Link
+              href="/dashboard/statutory"
+              className={isStatutoryPage ? styles.subMenuActive : ""}
+              aria-current={isStatutoryPage ? "page" : undefined}
+            >
+              법정 신고
+            </Link>
+          </div>
+        </div>
 
         {isAdmin && (
           <>
