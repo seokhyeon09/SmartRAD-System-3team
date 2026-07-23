@@ -17,7 +17,7 @@ export default function LoginPage() {
     setErrorMsg('');
 
     try {
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch('/api-system/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ empNo, password }),
