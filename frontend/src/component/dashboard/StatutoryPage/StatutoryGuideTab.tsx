@@ -15,37 +15,6 @@ import {
 export default function StatutoryGuideTab() {
   return (
     <div className={styles.guideContainer}>
-      {/* 상단 4개의 메인 카드 영역 */}
-      <div className={styles.topCards}>
-        <div className={`${styles.mainCard} ${styles.blue}`}>
-          <div className={styles.iconWrapper}><ShieldCheck size={24} /></div>
-          <h3>4대보험 신고</h3>
-          <p>국민연금, 건강보험, 고용보험, 산재보험 신고 절차 안내</p>
-          <button className={styles.linkBtn}>바로가기 &rarr;</button>
-        </div>
-
-        <div className={`${styles.mainCard} ${styles.orange}`}>
-          <div className={styles.iconWrapper}><Landmark size={24} /></div>
-          <h3>원천징수 납부</h3>
-          <p>소득세, 지방소득세 원천징수 신고 및 납부 절차</p>
-          <button className={styles.linkBtn}>바로가기 &rarr;</button>
-        </div>
-
-        <div className={`${styles.mainCard} ${styles.purple}`}>
-          <div className={styles.iconWrapper}><Receipt size={24} /></div>
-          <h3>연말정산</h3>
-          <p>연말정산 절차, 공제 항목, 지급명세서 제출 안내</p>
-          <button className={styles.linkBtn}>바로가기 &rarr;</button>
-        </div>
-
-        <div className={`${styles.mainCard} ${styles.green}`}>
-          <div className={styles.iconWrapper}><FileText size={24} /></div>
-          <h3>지급명세서 제출</h3>
-          <p>소득 유형별 지급명세서 작성 및 제출 기한 안내</p>
-          <button className={styles.linkBtn}>바로가기 &rarr;</button>
-        </div>
-      </div>
-
       {/* 하단 2단 레이아웃 영역 */}
       <div className={styles.bottomLayout}>
         
@@ -136,7 +105,7 @@ export default function StatutoryGuideTab() {
           </div>
         </div>
 
-        {/* 오른쪽: 사이드바 (서식, FAQ, 문의) */}
+        {/* 오른쪽: 사이드바 (서식, FAQ) */}
         <div className={styles.sideSection}>
           
           <div className={styles.sideCard}>
@@ -150,7 +119,7 @@ export default function StatutoryGuideTab() {
                     <span>국민연금 · 건강보험 · 고용 · 산재</span>
                   </div>
                 </div>
-                <button className={styles.downloadBtn}>다운로드</button>
+                <a href="/documents/form_4insure_acquire.pdf" download className={styles.downloadBtn}>다운로드</a>
               </li>
               <li>
                 <div className={styles.docInfo}>
@@ -160,7 +129,7 @@ export default function StatutoryGuideTab() {
                     <span>퇴사자 자격상실 신고용</span>
                   </div>
                 </div>
-                <button className={styles.downloadBtn}>다운로드</button>
+                <a href="/documents/form_4insure_loss.pdf" download className={styles.downloadBtn}>다운로드</a>
               </li>
               <li>
                 <div className={styles.docInfo}>
@@ -170,7 +139,7 @@ export default function StatutoryGuideTab() {
                     <span>매월 10일까지 제출</span>
                   </div>
                 </div>
-                <button className={styles.downloadBtnYellow}>다운로드</button>
+                <a href="/documents/form_withholding_tax.pdf" download className={`${styles.downloadBtn} ${styles.downloadBtnYellow}`}>다운로드</a>
               </li>
               <li>
                 <div className={styles.docInfo}>
@@ -180,7 +149,7 @@ export default function StatutoryGuideTab() {
                     <span>연말정산 후 3월 제출</span>
                   </div>
                 </div>
-                <button className={styles.downloadBtnPurple}>다운로드</button>
+                <a href="/documents/form_payment_statement.pdf" download className={`${styles.downloadBtn} ${styles.downloadBtnPurple}`}>다운로드</a>
               </li>
             </ul>
           </div>
@@ -206,36 +175,7 @@ export default function StatutoryGuideTab() {
               </div>
             </div>
           </div>
-
-          <div className={styles.contactCard}>
-            <div className={styles.contactHeader}>
-              <Phone size={18} /> 
-              <div>
-                <strong>신고 관련 문의</strong>
-                <span>전화 또는 채팅으로 문의하세요</span>
-              </div>
-            </div>
-            <div className={styles.contactInfo}>
-              <div className={styles.contactRow}>
-                <Headphones size={16} />
-                <div>
-                  <span>4대보험 포털 고객센터</span>
-                  <strong>1577-1000</strong>
-                </div>
-              </div>
-              <div className={styles.contactRow}>
-                <Headphones size={16} />
-                <div>
-                  <span>SmartRAD HR 고객지원</span>
-                  <strong>1588-0000 (평일 09~18시)</strong>
-                </div>
-              </div>
-            </div>
-            <button className={styles.chatBtn}>
-              <MessageCircle size={16} /> 채팅으로 문의하기
-            </button>
-          </div>
-
+          
         </div>
       </div>
     </div>
