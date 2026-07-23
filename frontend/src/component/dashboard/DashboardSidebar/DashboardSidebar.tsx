@@ -72,6 +72,21 @@ function SidebarIcon({ name }: SidebarIconProps) {
 
 export default function DashboardSidebar() {
   const pathname = usePathname();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    try {
+      const userStr = localStorage.getItem('userProfile');
+      if (userStr) {
+        const user = JSON.parse(userStr);
+        if (user.roleGroupName === '시스템 관리자') {
+          setIsAdmin(true);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const isDashboardPage = pathname === "/dashboard";
 
@@ -188,17 +203,21 @@ export default function DashboardSidebar() {
           <span className={styles.arrow}>⌄</span>
         </button>
 
-        <p className={`${styles.menuTitle} ${styles.adminTitle}`}>ADMIN</p>
+        {isAdmin && (
+          <>
+            <p className={`${styles.menuTitle} ${styles.adminTitle}`}>ADMIN</p>
 
-        {/* 시스템 관리 */}
-        <button type="button" className={styles.sideLink}>
-          <span className={styles.iconBox}>
-            <SidebarIcon name="system" />
-          </span>
+            {/* 시스템 관리 */}
+            <button type="button" className={styles.sideLink}>
+              <span className={styles.iconBox}>
+                <SidebarIcon name="system" />
+              </span>
 
-          <span className={styles.menuLabel}>시스템 관리</span>
-          <span className={styles.arrow}>⌄</span>
-        </button>
+              <span className={styles.menuLabel}>시스템 관리</span>
+              <span className={styles.arrow}>⌄</span>
+            </button>
+          </>
+        )}
       </nav>
     </aside>
   );
