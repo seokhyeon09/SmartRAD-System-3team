@@ -303,8 +303,8 @@ export default function RoleManagementPage() {
             <Search size={18} color="#94a3b8" />
             <input type="search" placeholder="직원, 부서 문서 등 검색하세요" />
           </label>
-          <div className={layoutStyles.profile} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className={layoutStyles.profile}>
+            <div className={layoutStyles.profileInfo}>
               <span>A</span>
               <div>
                 <strong>Admin</strong>
@@ -313,23 +313,12 @@ export default function RoleManagementPage() {
             </div>
             
             <button
+              className={layoutStyles.logoutBtn}
               onClick={() => {
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('userProfile');
                 window.location.href = '/login';
               }}
-              style={{
-                padding: '0.4rem 0.8rem',
-                border: '1px solid #cbd5e1',
-                borderRadius: '6px',
-                background: '#f8fafc',
-                color: '#475569',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 500,
-              }}
-              onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
-              onMouseOut={(e) => e.currentTarget.style.background = '#f8fafc'}
             >
               로그아웃
             </button>

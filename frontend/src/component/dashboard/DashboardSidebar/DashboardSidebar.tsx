@@ -90,7 +90,7 @@ export default function DashboardSidebar() {
 
   return (
     <aside className={styles.sidebar}>
-      <Link href="/" className={styles.brand}>
+      <Link href="/dashboard" className={styles.brand}>
         <span className={styles.brandSymbol}>＋</span>
 
         <span className={styles.brandText}>
