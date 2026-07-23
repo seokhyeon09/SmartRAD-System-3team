@@ -74,7 +74,11 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
             </div>
             
             <button
-              onClick={() => window.location.href = '/login'}
+              onClick={() => {
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('userProfile');
+                window.location.href = '/login';
+              }}
               style={{
                 padding: '0.4rem 0.8rem',
                 border: '1px solid #cbd5e1',
