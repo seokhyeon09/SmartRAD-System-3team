@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useAuthStore } from "@/store/authStore";
 import {
   Calendar,
   Clock,
@@ -47,47 +48,34 @@ interface EmpOption {
   isApprover?: boolean;
 }
 
-// 기본 사원 (DB 연결 전 폴백 및 테스트 뷰어 스위처 제공)
-const MOCK_EMPLOYEES: EmpOption[] = [
-  { id: 8, name: "김관리", dept: "인사총무팀", pos: "수석 (승인권자)", initial: "김", tone: "blue", isApprover: true },
-  { id: 1, name: "박시준", dept: "영상의학과", pos: "부장 (승인권자)", initial: "박", tone: "cyan", isApprover: true },
-  { id: 3, name: "김민서", dept: "진단검사의학과", pos: "사원 (본인)", initial: "김", tone: "green", isApprover: false },
-  { id: 4, name: "신유나", dept: "영상의학과", pos: "대리 (본인)", initial: "신", tone: "purple", isApprover: false },
-  { id: 5, name: "최지은", dept: "인사총무팀", pos: "과장 (승인권자)", initial: "최", tone: "red", isApprover: true },
-  { id: 6, name: "정우진", dept: "응급의학과", pos: "인턴 (본인)", initial: "정", tone: "orange", isApprover: false },
-  { id: 7, name: "배준혁", dept: "원무과", pos: "주임 (본인)", initial: "배", tone: "amber", isApprover: false },
-];
-
-const MOCK_SUMMARY_DEFAULT: LeaveSummaryResponse = {
-  totalAllocatedDays: 132,
-  totalUsedDays: 73.5,
-  usedPercentage: 55.7,
-  totalRemainingDays: 58.5,
-  thisMonthApplications: 7,
-  pendingApplications: 2,
-  riskEmployeeCount: 3,
-  typeStats: [
-    { type: "연차", count: 4, percentage: 57.1 },
-    { type: "반차", count: 2, percentage: 28.6 },
-    { type: "병가", count: 1, percentage: 14.3 },
-    { type: "기타", count: 0, percentage: 0.0 },
-  ],
-  riskEmployees: [
-    { employeeId: 5, name: "최지은", initial: "최", department: "인사총무팀", remainingDays: 1, tone: "red", tagStyle: "riskOne" },
-    { employeeId: 7, name: "배준혁", initial: "배", department: "원무과", remainingDays: 2, tone: "orange", tagStyle: "riskTwo" },
-    { employeeId: 6, name: "정우진", initial: "정", department: "응급의학과", remainingDays: 2, tone: "orange", tagStyle: "riskTwo" },
-  ],
+const EMPTY_SUMMARY: LeaveSummaryResponse = {
+  totalAllocatedDays: 0,
+  totalUsedDays: 0,
+  usedPercentage: 0,
+  totalRemainingDays: 0,
+  thisMonthApplications: 0,
+  pendingApplications: 0,
+  riskEmployeeCount: 0,
+  typeStats: [],
+  riskEmployees: [],
 };
 
 const FILTERS = ["전체", "승인대기", "승인완료", "반려"] as const;
 
 export default function LeavePage() {
   const [applications, setApplications] = useState<LeaveApplicationResponse[]>([]);
-  const [summary, setSummary] = useState<LeaveSummaryResponse>(MOCK_SUMMARY_DEFAULT);
-  const [empList, setEmpList] = useState<EmpOption[]>(MOCK_EMPLOYEES);
+  const [summary, setSummary] = useState<LeaveSummaryResponse>(EMPTY_SUMMARY);
+  const [empList, setEmpList] = useState<EmpOption[]>([]);
 
-  // 👤 뷰어 시뮬레이터: 현재 접속한 사용자가 누구인가? (승인권자 vs 일반 사원 본인)
-  const [currentViewer, setCurrentViewer] = useState<EmpOption>(MOCK_EMPLOYEES[0]);
+  const { userProfile } = useAuthStore();
+  
+  const currentUserName = userProfile?.name || "사원";
+  const canEdit = useMemo(() => {
+    const perm = userProfile?.perms?.find(p => p.menuCode === 'LEAVE_STATUS');
+    return perm ? perm.canWrite : false;
+  }, [userProfile]);
+
+  const isApprover = canEdit || (userProfile?.role?.includes("ADMIN") ?? false) || currentUserName === "김관리";
 
   // 상단 연도 및 월 실시간 조회 필터
   const [selectedYear, setSelectedYear] = useState<number>(2026);
@@ -102,7 +90,16 @@ export default function LeavePage() {
 
   // 모달 제어 및 입력 폼 상태
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedEmp, setSelectedEmp] = useState<EmpOption>(MOCK_EMPLOYEES[0]);
+  const DEFAULT_EMP: EmpOption = {
+    id: 0,
+    name: "로딩중...",
+    dept: "부서없음",
+    pos: "사원",
+    initial: "로",
+    tone: "blue",
+    isApprover: false
+  };
+  const [selectedEmp, setSelectedEmp] = useState<EmpOption>(DEFAULT_EMP);
   const [modalLeaveType, setModalLeaveType] = useState<"연차" | "반차(오전)" | "반차(오후)" | "병가" | "기타">("연차");
   const [startDate, setStartDate] = useState("2026-07-14");
   const [endDate, setEndDate] = useState("2026-07-15");
@@ -155,7 +152,7 @@ export default function LeavePage() {
         setApplications(apps);
       }
     } catch (err) {
-      // 오프라인 방어 폴백 유지
+      console.error("Failed to load leave data", err);
     }
   }, [selectedYear, selectedMonth, filter, typeFilter, keyword]);
 
@@ -185,7 +182,7 @@ export default function LeavePage() {
             };
           });
           setEmpList(mapped);
-          if (mapped.length > 0 && !selectedEmp.id) {
+          if (mapped.length > 0 && selectedEmp.id === 0) {
             setSelectedEmp(mapped[0]);
           }
         }
@@ -207,7 +204,7 @@ export default function LeavePage() {
         }
       })
       .catch(() => {
-        setQuotaInfo({ totalDays: 15.0, usedDays: 3.0, remainingDays: 12.0 });
+        setQuotaInfo({ totalDays: 0, usedDays: 0, remainingDays: 0 });
       });
   }, [selectedEmp, selectedYear]);
 
@@ -269,7 +266,7 @@ export default function LeavePage() {
 
   // 1. 선택 승인 핸들러 (승인권자 전용)
   const handleBulkApprove = async () => {
-    if (!currentViewer.isApprover) {
+    if (!isApprover) {
       alert("휴가 결재는 '승인권자' 권한을 가진 관리자만 수행할 수 있습니다.");
       return;
     }
@@ -289,7 +286,7 @@ export default function LeavePage() {
 
   // 1-1. 선택 반려 핸들러 (승인권자 전용)
   const handleBulkReject = async () => {
-    if (!currentViewer.isApprover) {
+    if (!isApprover) {
       alert("휴가 결재는 '승인권자' 권한을 가진 관리자만 수행할 수 있습니다.");
       return;
     }
@@ -312,8 +309,8 @@ export default function LeavePage() {
 
   // 2. 🚨 단건 특별승인 핸들러 (승인권자 전용 & 사유 작성 필수)
   const handleSpecialApprove = async (id: number | string, empName: string) => {
-    if (!currentViewer.isApprover) {
-      alert("특별승인은 승인권자 및 인사 총책임자만 집계할 수 있습니다.");
+    if (!isApprover) {
+      alert("승인 권한이 없습니다.");
       return;
     }
     const reason = window.prompt(
@@ -336,8 +333,8 @@ export default function LeavePage() {
 
   // 3. 🗑️ 휴가 신청 취소 핸들러 (본인 전용)
   const handleCancelMyApplication = async (id: number | string, appOwnerName: string) => {
-    if (currentViewer.name !== appOwnerName && !currentViewer.name.includes("관리")) {
-      alert("❌ 휴가 신청 취소는 신청자 '본인'만 수행할 수 있습니다.\n우상단의 접속 권한 뷰어에서 본인 아이디로 변경 후 시도하세요.");
+    if (currentUserName !== appOwnerName && !isApprover) {
+      alert("본인의 신청 건만 철회할 수 있습니다.");
       return;
     }
     const confirmCancel = window.confirm(`정말로 휴가 신청 건을 취소(삭제)하시겠습니까?\n이미 승인되었던 건이라면 연차가 복원되고 물리 첨부파일이 파쇄됩니다.`);
@@ -447,25 +444,6 @@ export default function LeavePage() {
           <p>직원의 연차·반차·병가 등 휴가 신청 현황을 조회하고 승인 처리합니다.</p>
         </div>
         <div className={styles.pageActions}>
-          {/* 👤 현재 접속 계정 (승인권자 vs 일반 본인 시뮬레이터) */}
-          <div className={styles.viewerSelector} title="권한별 버튼 표출 테스트를 위해 현재 로그인된 사용자를 자유롭게 바꿀 수 있습니다.">
-            <span>👤 현재 사용자:</span>
-            <select
-              className={styles.viewerSelect}
-              value={currentViewer.id}
-              onChange={(e) => {
-                const found = empList.find((x) => x.id === Number(e.target.value));
-                if (found) setCurrentViewer(found);
-              }}
-            >
-              {empList.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.name} ({e.isApprover ? "승인권자" : "본인·사원"})
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className={styles.selectWrapper}>
             <Calendar size={15} color="#475569" className={styles.selectIcon} />
             <select
@@ -504,7 +482,8 @@ export default function LeavePage() {
             type="button"
             className={styles.primaryBtn}
             onClick={() => {
-              setSelectedEmp(currentViewer);
+              const myEmp = empList.find(e => e.name === currentUserName);
+              setSelectedEmp(myEmp || (empList.length > 0 ? empList[0] : DEFAULT_EMP));
               setIsModalOpen(true);
             }}
           >
@@ -641,12 +620,14 @@ export default function LeavePage() {
               </div>
 
               {/* 📌 승인권자에게만 표출되는 선택 승인 / 선택 반려 버튼 */}
-              {currentViewer.isApprover && (
+              {isApprover && (
                 <>
                   <button
                     type="button"
                     className={styles.bulkApproveBtn}
                     onClick={handleBulkApprove}
+                    disabled={!canEdit}
+                    title={!canEdit ? "수정 권한이 없습니다" : undefined}
                   >
                     <Check size={16} />
                     선택 승인
@@ -655,6 +636,8 @@ export default function LeavePage() {
                     type="button"
                     className={styles.bulkRejectBtn}
                     onClick={handleBulkReject}
+                    disabled={!canEdit}
+                    title={!canEdit ? "수정 권한이 없습니다" : undefined}
                   >
                     <X size={16} strokeWidth={2.5} />
                     선택 반려
@@ -673,9 +656,10 @@ export default function LeavePage() {
                       type="checkbox"
                       checked={selected.length === selectableRows.length && selectableRows.length > 0}
                       onChange={toggleAll}
-                      disabled={!currentViewer.isApprover || selectableRows.length === 0}
+                      disabled={!isApprover || selectableRows.length === 0}
                     />
                   </th>
+                  <th>상태</th>
                   <th>직원</th>
                   <th>부서</th>
                   <th>휴가 유형</th>
@@ -692,14 +676,14 @@ export default function LeavePage() {
                 {filtered.map((row) => {
                   const isChecked = selected.includes(row.id);
                   const isSpecial = isSpecialReqRow(row);
-                  const isCheckboxDisabled = !currentViewer.isApprover || isSpecial || row.status !== "승인대기";
+                  const isCheckboxDisabled = !isApprover || isSpecial || row.status !== "승인대기";
 
                   let typeBadgeClass = styles.typeAnnual;
                   if (row.type.includes("반차")) typeBadgeClass = styles.typeHalf;
                   else if (row.type.includes("병가")) typeBadgeClass = styles.typeSick;
                   else if (row.type.includes("기타")) typeBadgeClass = styles.typeOther;
 
-                  const isMyApplication = currentViewer.name === row.name || currentViewer.name === "김관리";
+                  const isMyApplication = currentUserName === row.name || isApprover;
 
                   return (
                     <tr key={row.id} className={isChecked ? styles.rowChecked : ""}>
@@ -712,6 +696,11 @@ export default function LeavePage() {
                           onChange={() => toggleSelect(row.id, isCheckboxDisabled)}
                           title={isSpecial ? "특별승인 대상은 일괄 체크가 불가능합니다. 우측 [특별승인]으로 사유 기입 바랍니다." : ""}
                         />
+                      </td>
+                      <td>
+                        <span className={`${styles.statusBadge} ${row.status === '승인대기' ? styles.statusPending : row.status === '승인완료' ? styles.statusApproved : styles.statusRejected}`}>
+                          {row.status}
+                        </span>
                       </td>
                       <td>
                         <div className={styles.empCell}>
@@ -768,11 +757,13 @@ export default function LeavePage() {
                       <td>
                         <div className={styles.actionGroup}>
                           {/* 1. 특별승인 대상 건 & 승인권자 viewing 시 개별 처리 버튼 표출 */}
-                          {isSpecial && row.status === "승인대기" && currentViewer.isApprover && (
+                          {isSpecial && row.status === "승인대기" && isApprover && (
                             <button
                               type="button"
                               className={styles.specialApproveBtn}
                               onClick={() => handleSpecialApprove(row.id, row.name)}
+                              disabled={!canEdit}
+                              title={!canEdit ? "수정 권한이 없습니다" : undefined}
                             >
                               <ShieldAlert size={13} />
                               🚨 특별승인
@@ -785,7 +776,8 @@ export default function LeavePage() {
                               type="button"
                               className={styles.cancelBtn}
                               onClick={() => handleCancelMyApplication(row.id, row.name)}
-                              title="본인이 신청한 휴가를 취소(철회)하고 첨부파일을 삭제합니다."
+                              disabled={!canEdit}
+                              title={!canEdit ? "수정 권한이 없습니다" : "본인이 신청한 휴가를 취소(철회)하고 첨부파일을 삭제합니다."}
                             >
                               <Trash2 size={13} />
                               본인취소
@@ -1269,6 +1261,8 @@ export default function LeavePage() {
                 type="button"
                 className={styles.modalSubmitBtn}
                 onClick={handleModalSubmit}
+                disabled={!canEdit}
+                title={!canEdit ? "수정 권한이 없습니다" : undefined}
               >
                 <Check size={18} strokeWidth={2.5} />
                 휴가 등록

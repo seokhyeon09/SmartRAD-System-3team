@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useAuthStore } from "@/store/authStore";
 import type { DashboardData } from "@/types/dashboard";
 import styles from "./DashboardPage.module.scss";
 
@@ -65,6 +66,12 @@ function QuickIcon({ name }: { name: (typeof QUICK_ACTIONS)[number]["icon"] }) {
 export default function DashboardPage({ initialData }: DashboardPageProps) {
   const [todayText, setTodayText] = useState("");
   const [displayName, setDisplayName] = useState(initialData.profile.name);
+
+  const { userProfile } = useAuthStore();
+  const canEdit = useMemo(() => {
+    const perm = userProfile?.perms?.find(p => p.menuCode === 'NOTICE');
+    return perm ? perm.canWrite : false;
+  }, [userProfile]);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -295,6 +302,9 @@ export default function DashboardPage({ initialData }: DashboardPageProps) {
               type="button"
               className={styles.linkBtn}
               onClick={() => setCreateOpen(true)}
+              disabled={!canEdit}
+              title={!canEdit ? "수정 권한이 없습니다" : undefined}
+              style={{ opacity: canEdit ? 1 : 0.4, cursor: canEdit ? 'pointer' : 'not-allowed' }}
             >
               공지사항 작성 ›
             </button>
