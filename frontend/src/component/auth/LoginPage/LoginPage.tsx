@@ -120,7 +120,7 @@ export default function LoginPage() {
                 <div className={styles.inputWrapper}>
                   <input
                     type="text"
-                    placeholder="ADMIN-001 / RN-1004"
+                    placeholder="ADMIN-001 / RN-2001"
                     value={empNo}
                     onChange={(e) => setEmpNo(e.target.value)}
                     required
@@ -133,7 +133,7 @@ export default function LoginPage() {
                 <div className={styles.inputWrapper}>
                   <input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="1234"
+                    placeholder="비밀번호를 입력하세요"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
